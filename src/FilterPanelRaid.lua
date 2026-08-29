@@ -32,6 +32,8 @@ end
 
 ---Check if raid group has activities matching difficulty filters.
 ---For raids, uses difficultyID (14=Normal, 15=Heroic, 16=Mythic) since boolean flags are always false.
+---Any other difficulty (Timewalking 33, LFR 17, legacy 10/25 player, ...) is not covered by the
+---Normal/Heroic/Mythic checkboxes, so those groups are always shown instead of being hidden.
 local function GroupHasMatchingDifficulty(categoryID, groupID, showMythic, showHeroic, showNormal)
     local activities = C_LFGList.GetAvailableActivities(categoryID, groupID)
     if not activities or #activities == 0 then 
@@ -46,9 +48,13 @@ local function GroupHasMatchingDifficulty(categoryID, groupID, showMythic, showH
         local activityInfo = C_LFGList.GetActivityInfoTable(activityID)
         if activityInfo then
             local difficultyID = activityInfo.difficultyID
-            if (showNormal and difficultyID == 14) or
-               (showHeroic and difficultyID == 15) or
-               (showMythic and difficultyID == 16) then
+            if difficultyID == 14 then
+                if showNormal then return true end
+            elseif difficultyID == 15 then
+                if showHeroic then return true end
+            elseif difficultyID == 16 then
+                if showMythic then return true end
+            else
                 return true
             end
         end
@@ -321,7 +327,9 @@ local function UpdateRaidList()
         end
     end
 
-    if isCurrentExpansion and #standaloneActivities > 0 then
+    -- Standalone activities (groupID 0): World Bosses in the current-expansion list,
+    -- and legacy raids that are not part of any activity group.
+    if #standaloneActivities > 0 then
         if groupCount > 0 then
             local separator = content:CreateTexture(nil, "ARTWORK")
             separator:SetHeight(1)
